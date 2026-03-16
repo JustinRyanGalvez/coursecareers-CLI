@@ -9,6 +9,8 @@ import dotenv from 'dotenv';
 import Database from 'better-sqlite3';
 import fs from 'fs';
 
+import * as SDK from './lib/sdk.js';
+
 dotenv.config();
 
 // Returns command line argument given in the terminal in an array
@@ -22,38 +24,6 @@ const args = process.argv.slice(2);
 const command = args[0];
 const favorite = args[1];
 const url = args[2];
-
-let db;
-const dbPath = 'favorites.db';
-
-function init() {
-  console.log('Initializing database...');
-  db = new Database(dbPath);
-
-  const createTable = `
-    CREATE TABLE IF NOT EXISTS favorites (
-      id INTEGER PRIMARY KEY,
-      name TEXT NOT NULL, 
-      url TEXT NOT NULL
-    )
-  `;
-
-  db.exec(createTable);
-
-  const data = [
-    { name: 'goog', url: 'https://google.com' },
-    { name: 'social', url: 'https://instagram.com' },
-    { name: 'code', url: 'https://leetcode.com' },
-  ];
-
-  const insertData = db.prepare(
-    'INSERT INTO favorites (name, url) VALUES (?,?)',
-  );
-
-  data.forEach((favorite) => {
-    insertData.run(favorite.name, favorite.url);
-  });
-}
 
 function checkBrowser() {
   // Remember question mark means if any of these throw undefined, do not crash system, instead throw error
@@ -127,21 +97,23 @@ async function openFavorite(favorite) {
 }
 
 function add(favorite, url) {
+  db.prepare('INSERT INTO favorites (name, url) VALUES (?, ?)').run(
+    favorite,
+    url,
+  );
   console.log('adding', favorite, url);
 }
 
 function rm(favorite) {
-  console.log('rm', favorite);
+  db.prepare('DELETE FROM favorites WHERE name= ?').run(favorite);
+  console.log('removing', favorite);
 }
 
 function ls() {
   const favorites = db.prepare('SELECT * FROM favorites').all();
   console.log('ALL favorites:');
-  let num = 0;
   favorites.forEach((favorite) => {
-    console.log(num);
     console.log(`${favorite.name}: ${favorite.url}`);
-    num++;
   });
 }
 // Environmental variables - grab environment variable I write in terminal after process.env.envVarName
