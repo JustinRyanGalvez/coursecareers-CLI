@@ -1,5 +1,5 @@
 # Quick Start Guide
 
-use `favs` by itself to see usage examples.
+This will work in conjuction with the coursecareers-API.
 
-To start, you could try `favs open social`.
+Use favs in the command line to see a list of options to bookmark and open your favorite websites!
