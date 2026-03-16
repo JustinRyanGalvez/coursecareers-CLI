@@ -76,6 +76,7 @@ function checkBrowser() {
 }
 
 function displayMenu() {
+  console.log('ls                     : List all favorites');
   console.log('open <favorite>        : Open a saved favorite');
   console.log('add <favorite> <url>   : add a new favorite for some URL');
   console.log('rm <favorite>          : remove a saved favorite.');
@@ -133,6 +134,16 @@ function rm(favorite) {
   console.log('rm', favorite);
 }
 
+function ls() {
+  const favorites = db.prepare('SELECT * FROM favorites').all();
+  console.log('ALL favorites:');
+  let num = 0;
+  favorites.forEach((favorite) => {
+    console.log(num);
+    console.log(`${favorite.name}: ${favorite.url}`);
+    num++;
+  });
+}
 // Environmental variables - grab environment variable I write in terminal after process.env.envVarName
 // In this case, i wrote "BROWSER=chrome npm run start open social"
 // This was moved to checkBrowser section
