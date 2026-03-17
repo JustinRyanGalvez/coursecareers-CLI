@@ -9,6 +9,7 @@ import dotenv from 'dotenv';
 import Database from 'better-sqlite3';
 import fs from 'fs';
 
+// Import SDK functions for writing and drawing from db
 import * as SDK from './lib/sdk.js';
 
 dotenv.config();
@@ -24,6 +25,9 @@ const args = process.argv.slice(2);
 const command = args[0];
 const favorite = args[1];
 const url = args[2];
+
+// pull ALL favorites and manipulate depending on CLI command
+const favorites = await SDK.getFavorites();
 
 function checkBrowser() {
   // Remember question mark means if any of these throw undefined, do not crash system, instead throw error
@@ -52,12 +56,14 @@ function displayMenu() {
   console.log('rm <favorite>          : remove a saved favorite.');
 }
 
-async function openFavorite(favorite) {
-  const row = db
-    .prepare('SELECT * FROM favorites WHERE name = ?')
-    .get(favorite);
+async function openFavorite(name) {
+  const favToOpen = favorites.find((fav) => fav.name === name);
+  if (!favToOpen) {
+    console.log(`Favorite ${name} does not exist`);
+    process.exit(1);
+  }
 
-  const url = row.url;
+  const url = favToOpen.url;
 
   console.log('Opening', favorite);
 
@@ -96,38 +102,38 @@ async function openFavorite(favorite) {
   }
 }
 
-function add(favorite, url) {
-  db.prepare('INSERT INTO favorites (name, url) VALUES (?, ?)').run(
-    favorite,
-    url,
-  );
-  console.log('adding', favorite, url);
-}
+const add = async (name, url) => {
+  const id = await SDK.addFavorite(name, url);
+  if (!id) {
+    console.log(`Filed to add favorite ${name}.`);
+    process.exit(1);
+  }
+  console.log('adding', name, url);
+};
 
-function rm(favorite) {
-  db.prepare('DELETE FROM favorites WHERE name= ?').run(favorite);
-  console.log('removing', favorite);
-}
+const rm = async (name) => {
+  const favToDelete = favorites.find((fav) => fav.name === name);
+  if (!favToDelete) {
+    console.log(`Favorite ${name} does not exist`);
+    process.exit(1);
+  }
 
-function ls() {
-  const favorites = db.prepare('SELECT * FROM favorites').all();
+  await SDK.deleteFavorite(favToDelete.id);
+  console.log('removing', name);
+};
+
+const ls = async () => {
   console.log('ALL favorites:');
   favorites.forEach((favorite) => {
     console.log(`${favorite.name}: ${favorite.url}`);
   });
-}
+};
 // Environmental variables - grab environment variable I write in terminal after process.env.envVarName
 // In this case, i wrote "BROWSER=chrome npm run start open social"
 // This was moved to checkBrowser section
 
 // const browser = process.env.BROWSER;
 // console.log('Opening with', browser);
-
-if (!fs.existsSync(dbPath)) {
-  init();
-} else {
-  db = new Database(dbPath);
-}
 
 // Prints help menu
 const argCount = args.length;
@@ -198,4 +204,5 @@ if (
   process.exit(1);
 }
 
-commands[command].f(favorite, url);
+// Needs await because of the await involved in the commands
+await commands[command].f(favorite, url);
